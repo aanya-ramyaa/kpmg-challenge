@@ -8,7 +8,3 @@ inputs:
 outputs:
   stack-id: # id of output
     description: "AWS Region for deployment"
-  apiGatewayInvokeURL: # id of the output
-    description: "API url to get Vaccination Slots for a given Pincode and Date"
-  lambdaArn: # id of the output
-    description: "Lambda's ARN"
