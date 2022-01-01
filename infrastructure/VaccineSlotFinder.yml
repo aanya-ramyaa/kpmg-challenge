@@ -12,9 +12,9 @@ Parameters:
     Default: getJabSlot
 
 Resources:
-  
-  #This Lambda fetches vaccination slots from CoWIN server
-  sfLambdaFunction:
+
+  #Lambda for fetching vaccination slots from CoWIN server
+  LambdaFunction:
     Type: AWS::Lambda::Function
     DependsOn: lambdaIAMRole
     Properties:
@@ -118,7 +118,7 @@ Resources:
       Role: !GetAtt lambdaIAMRole.Arn
       Runtime: python3.7
  
-  #Lambda Basic Execution Role  
+  #Lambda Basic Execution Role
   lambdaIAMRole:
     Type: AWS::IAM::Role
     Properties:
@@ -141,57 +141,56 @@ Resources:
             Action:
             - logs:*
             Resource: arn:aws:logs:*:*:*
-  
-  #Create HTTP API Gateway & Add Lambda PROXY Integration
-  sfHttpApi:
+
+  #HTTP API Gateway Creation
+  APIGatewayHTTP:
     Type: AWS::ApiGatewayV2::Api
-    DependsOn: sfLambdaFunction
+    DependsOn: LambdaFunction
     Properties:
       Name: !Ref apiGatewayName
       ProtocolType: HTTP
-      Target: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${sfLambdaFunction}/invocations
-      #CredentialsArn: !GetAtt sfApiGatewayRole.Arn
+      Target: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaFunction}/invocations
 
   #Allow API Gateway to invoke Lambda via this permission
-  sfApiTriggerLambdaPermission:
+  LambdaInvokePermission:
     Type: "AWS::Lambda::Permission"
-    DependsOn: sfHttpApi
+    DependsOn: APIGatewayHTTP
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt sfLambdaFunction.Arn
+      FunctionName: !GetAtt LambdaFunction.Arn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${sfHttpApi}/*/*/${sfLambdaFunction}' 
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${APIGatewayHTTP}/*/*/${LambdaFunction}' 
 
-  #Define API Gateway - Lambda Integration Parameters
-  sfApiLambdProxyIntegration:
+  #API Gateway - Lambda Integration Creation
+  APILambdaIntegration:
     Type: "AWS::ApiGatewayV2::Integration"
-    DependsOn: sfHttpApi
+    DependsOn: APIGatewayHTTP
     Properties:
       Description: Lambda Integration
       ConnectionType: INTERNET
       IntegrationMethod: POST
-      IntegrationUri: !Sub  "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${sfLambdaFunction.Arn}/invocations"
+      IntegrationUri: !Sub  "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations"
       PayloadFormatVersion: '2.0'
-      ApiId: !Ref sfHttpApi
+      ApiId: !Ref APIGatewayHTTP
       IntegrationType: AWS_PROXY
 
-  #Define API Route which will decide the API URL
-  sfRoute:
+  #API Route/Path Creation
+  APIRoute:
     Type: 'AWS::ApiGatewayV2::Route'
     DependsOn:
-      - sfApiLambdProxyIntegration
+      - APILambdaIntegration
     Properties:
-      ApiId: !Ref sfHttpApi
-      RouteKey: !Sub "ANY /${sfLambdaFunction}"
+      ApiId: !Ref APIGatewayHTTP
+      RouteKey: !Sub "ANY /${LambdaFunction}"
       AuthorizationType: NONE
       Target: !Join 
         - /
         - - integrations
-          - !Ref sfApiLambdProxyIntegration
+          - !Ref APILambdaIntegration
 
 Outputs:
   apiGatewayInvokeURL:
-    Value: !Sub https://${sfHttpApi}.execute-api.${AWS::Region}.amazonaws.com/${sfLambdaFunction}?pincode=122002&date=01-01-2022
+    Value: !Sub https://${APIGatewayHTTP}.execute-api.${AWS::Region}.amazonaws.com/${LambdaFunction}?pincode=122002&date=01-01-2022
 
   lambdaArn:
-    Value: !GetAtt sfLambdaFunction.Arn
+    Value: !GetAtt LambdaFunction.Arn
