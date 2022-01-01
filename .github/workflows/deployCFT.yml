@@ -38,8 +38,8 @@ jobs:
       - name: Deploy to AWS CloudFormation
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
-          name: testDeploy
-          template: samplesg.yaml
+          name: VaccineSlotFinder_Stack
+          template: VaccineSlotFinder.yml
           no-fail-on-empty-changeset: "1"
-          # parameter-overrides: "EC2InstanceType=t2.micro"
+          # parameter-overrides: "apiGatewayName=testVaccineSlotAPI"
   
