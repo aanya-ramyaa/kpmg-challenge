@@ -36,10 +36,15 @@ jobs:
 
       # Deploy to AWS CloudFormation
       - name: Deploy to AWS CloudFormation
+        id: launch-stack
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
           name: VaccineSlotFinder-Stack
           template: infrastructure/VaccineSlotFinder.yml
           no-fail-on-empty-changeset: "1"
           # parameter-overrides: "apiGatewayName=testVaccineSlotAPI"
+      
+      # Publish API URL
+      - name: API link
+        run: echo 'Vaccination Slot Finder API link -- ${{steps.launch-stack.outputs.apiGatewayInvokeURL}}' 
   
