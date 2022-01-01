@@ -12,7 +12,8 @@ Parameters:
     Default: getJabSlot
 
 Resources:
-
+  
+  #This Lambda fetches vaccination slots from CoWIN server
   sfLambdaFunction:
     Type: AWS::Lambda::Function
     DependsOn: lambdaIAMRole
@@ -117,6 +118,7 @@ Resources:
       Role: !GetAtt lambdaIAMRole.Arn
       Runtime: python3.7
  
+  #Lambda Basic Execution Role  
   lambdaIAMRole:
     Type: AWS::IAM::Role
     Properties:
@@ -139,7 +141,8 @@ Resources:
             Action:
             - logs:*
             Resource: arn:aws:logs:*:*:*
-
+  
+  #Create HTTP API Gateway & Add Lambda PROXY Integration
   sfHttpApi:
     Type: AWS::ApiGatewayV2::Api
     DependsOn: sfLambdaFunction
@@ -149,6 +152,7 @@ Resources:
       Target: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${sfLambdaFunction}/invocations
       #CredentialsArn: !GetAtt sfApiGatewayRole.Arn
 
+  #Allow API Gateway to invoke Lambda via this permission
   sfApiTriggerLambdaPermission:
     Type: "AWS::Lambda::Permission"
     DependsOn: sfHttpApi
@@ -158,6 +162,7 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${sfHttpApi}/*/*/${sfLambdaFunction}' 
 
+  #Define API Gateway - Lambda Integration Parameters
   sfApiLambdProxyIntegration:
     Type: "AWS::ApiGatewayV2::Integration"
     DependsOn: sfHttpApi
@@ -170,6 +175,7 @@ Resources:
       ApiId: !Ref sfHttpApi
       IntegrationType: AWS_PROXY
 
+  #Define API Route which will decide the API URL
   sfRoute:
     Type: 'AWS::ApiGatewayV2::Route'
     DependsOn:
