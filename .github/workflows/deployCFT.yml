@@ -39,7 +39,7 @@ jobs:
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
           name: VaccineSlotFinder_Stack
-          template: VaccineSlotFinder.yml
+          template: infrastructure/VaccineSlotFinder.yml
           no-fail-on-empty-changeset: "1"
           # parameter-overrides: "apiGatewayName=testVaccineSlotAPI"
   
